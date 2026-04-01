@@ -1,0 +1,5 @@
+images_uncompressed/
+landing_page_3d.glb
+CLAUDE.md
+*.jpg
+!images/gehry_sketch.jpg
