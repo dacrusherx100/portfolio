@@ -61,48 +61,6 @@
       pointer-events: none;
       z-index: 1;
     }
-    .slideshow-viewport.has-video::after,
-    .slideshow-viewport.has-link::after { display: none; }
-
-    .slide-link-wrap {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      overflow: hidden;
-    }
-    .slideshow-viewport .slide-link-wrap {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-    }
-    .slide-link-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.3);
-      transition: background 0.2s;
-      cursor: pointer;
-    }
-    .slide-link-overlay:hover {
-      background: rgba(0,0,0,0.45);
-    }
-    .slide-link-cta {
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.8);
-      padding: 10px 24px;
-      border-radius: 4px;
-      transition: background 0.2s, border-color 0.2s;
-      backdrop-filter: blur(2px);
-      text-decoration: none;
-    }
-    .slide-link-overlay:hover .slide-link-cta {
-      background: rgba(255,255,255,0.15);
-      border-color: #fff;
-    }
 
     /* ── Home button ── */
     .home-btn {
@@ -1252,18 +1210,13 @@
       20:  { id: "kcgKxwaDVxo", label: "mama's dungeon — watch the animation" },
       34:  null,
       66:  null,
-      91:  { id: "9YbiHt_vGI4", label: "chimera — watch the walkthrough" },
-      125: { id: "np0nULSMyXQ", label: "fusion babies — watch the animated short film" },
+      125: { id: "A3n3lqPHZ6w", label: "fusion babies — watch the animated short film" },
       126: null,
     };
 
     const videoInsertions = {
-      65:  { id: "pXYn6NJ6bdM", label: "good afternoon charlie — video" },
+      98:  { id: "9YbiHt_vGI4", label: "chimera — watch the walkthrough" },
       104: { id: "dj6zxYepuGc", label: "dogma — watch the exploration" },
-    };
-
-    const linkInsertions = {
-      65:  { label: "good afternoon charlie", url: "https://jackwasielewski.itch.io/good-afternoon-charlie", cta: "play on itch.io", thumb: "images/gac_screenshot.webp", afterVideo: true },
     };
 
     const slides = [];
@@ -1308,11 +1261,6 @@
         if (videoInsertions.hasOwnProperty(i)) {
           const vid = videoInsertions[i];
           slides.push({ type: 'video', id: vid.id, label: vid.label, spreadNum: i });
-        }
-
-        if (linkInsertions.hasOwnProperty(i)) {
-          const lnk = linkInsertions[i];
-          slides.push({ type: 'link', label: lnk.label, url: lnk.url, cta: lnk.cta, thumb: lnk.thumb, spreadNum: i });
         }
       }
     })();
@@ -1371,7 +1319,6 @@
     // ══════════════════════════════════════════
     function videoEmbedHTML(id, label, size) {
       const thumbUrl = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
-      const watchUrl = `https://www.youtube.com/watch?v=${id}`;
       const cls = size === 'full' ? 'slide-video' : 'video-embed';
       return `
         <div class="${cls} yt-thumb-player" data-yt-id="${id}">
@@ -1379,7 +1326,6 @@
           <div class="yt-play-btn" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:48px;background:rgba(0,0,0,0.75);border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><polygon points="6,4 20,12 6,20"/></svg>
           </div>
-          <a href="${watchUrl}" target="_blank" rel="noopener" style="position:absolute;bottom:8px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.7);font-family:var(--mono);text-decoration:none;">open on youtube &#8599;</a>
         </div>
       `;
     }
@@ -1394,22 +1340,10 @@
         allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>`;
     });
 
-    function linkSlideHTML(s) {
-      const bgStyle = s.thumb ? `background-image:url('${s.thumb}');background-size:cover;background-position:center;` : '';
-      return `<div class="slide-link-wrap" style="${bgStyle}">
-        <a class="slide-link-overlay" href="${s.url}" target="_blank" rel="noopener">
-          <span class="slide-link-cta">${s.cta} &#8599;</span>
-        </a>
-      </div>`;
-    }
-
     function slideHTML(idx) {
       const s = slides[idx];
       if (s.type === 'video') {
         return videoEmbedHTML(s.id, s.label, 'full');
-      }
-      if (s.type === 'link') {
-        return linkSlideHTML(s);
       }
       return `<img src="${s.src}" alt="Portfolio spread ${s.spreadNum}" draggable="false">`;
     }
@@ -1457,20 +1391,12 @@
       for (let i = startIdx; i < endIdx; i++) {
         const s = slides[i];
         if (s.type === 'video') {
-          const thumbUrl = `https://img.youtube.com/vi/${s.id}/maxresdefault.jpg`;
+          const thumbUrl = `https://img.youtube.com/vi/${s.id}/hqdefault.jpg`;
           html += `
             <div class="home-thumb" onclick="runCmd('portfolio');setTimeout(()=>goToSlide(${i}),50)">
               <img src="${thumbUrl}" alt="${s.label}" loading="lazy">
               <div class="home-thumb-play"><svg width="10" height="10" viewBox="0 0 24 24" fill="#fff"><polygon points="6,4 20,12 6,20"/></svg></div>
               <span class="home-thumb-num">${s.label.split('—')[0].trim()}</span>
-            </div>`;
-        } else if (s.type === 'link') {
-          const linkThumb = s.thumb || '';
-          html += `
-            <div class="home-thumb" onclick="runCmd('portfolio');setTimeout(()=>goToSlide(${i}),50)">
-              ${linkThumb ? `<img src="${linkThumb}" alt="${s.label}" loading="lazy">` : `<div style="width:100%;aspect-ratio:16/10;background:var(--bg);"></div>`}
-              <div class="home-thumb-play"><span style="font-size:7px;font-family:var(--mono);">&#8599;</span></div>
-              <span class="home-thumb-num">${s.label}</span>
             </div>`;
         } else {
           html += `
@@ -1501,7 +1427,7 @@
     function renderPortfolio() {
       const desktopSlideshow = `
         <div class="slideshow-container" id="slideshowContainer">
-          <div class="slideshow-viewport" id="slideshowViewport" onclick="if(!event.target.closest('.yt-thumb-player')&&!event.target.closest('.slide-link-wrap'))openPresent()">
+          <div class="slideshow-viewport" id="slideshowViewport" onclick="if(!event.target.closest('.yt-thumb-player'))openPresent()">
             <div class="slide-fade">${slideHTML(0)}</div>
           </div>
           <div class="slide-progress-wrap"><div class="slide-progress-bar" id="slideProgress" style="width:${(1/slides.length*100).toFixed(1)}%"></div></div>
@@ -1528,16 +1454,6 @@
         if (s.type === 'video') {
           mobileScroll += videoEmbedHTML(s.id, s.label, 'embed') +
             `<div class="video-label">${s.label}</div>`;
-        } else if (s.type === 'link') {
-          mobileScroll += `
-            <div class="spread">
-              <a href="${s.url}" target="_blank" rel="noopener" style="display:block;position:relative;width:100%;border-radius:4px;overflow:hidden;text-decoration:none;">
-                ${s.thumb ? `<img src="${s.thumb}" alt="${s.label}" style="width:100%;display:block;">` : `<div style="width:100%;aspect-ratio:16/10;background:var(--bg);"></div>`}
-                <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);">
-                  <span style="font-family:var(--mono);font-size:0.75rem;color:#fff;border:1px solid rgba(255,255,255,0.8);padding:6px 16px;border-radius:4px;">${s.cta} &#8599;</span>
-                </div>
-              </a>
-            </div>`;
         } else {
           mobileScroll += `
             <div class="spread">
@@ -1693,9 +1609,6 @@
         if (s.type === 'video') {
           return videoEmbedHTML(s.id, s.label, 'embed');
         }
-        if (s.type === 'link') {
-          return linkSlideHTML(s);
-        }
         return `<img src="${s.src}" alt="Spread ${s.spreadNum}" loading="lazy">`;
       }
 
@@ -1791,8 +1704,6 @@
       const viewport = document.getElementById('slideshowViewport');
       if (!viewport) return;
       viewport.innerHTML = `<div class="slide-fade">${slideHTML(currentSlide)}</div>`;
-      viewport.classList.toggle('has-video', slides[currentSlide].type === 'video');
-      viewport.classList.toggle('has-link', slides[currentSlide].type === 'link');
       document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${slides.length}`;
       const chEl = document.getElementById('slideChapter');
       if (chEl) chEl.textContent = getChapterName(currentSlide);
@@ -1828,7 +1739,7 @@
         const s = slides[i];
         const isCurrent = i === currentSlide ? ' current' : '';
         if (s.type === 'video') {
-          const thumbUrl = `https://img.youtube.com/vi/${s.id}/maxresdefault.jpg`;
+          const thumbUrl = `https://img.youtube.com/vi/${s.id}/hqdefault.jpg`;
           html += `
             <div class="overview-thumb${isCurrent}" onclick="selectFromOverview(${i})">
               <div style="position:relative;">
@@ -1838,13 +1749,6 @@
                 </div>
               </div>
               <div class="thumb-number">${s.label.split('—')[0].trim()}</div>
-            </div>
-          `;
-        } else if (s.type === 'link') {
-          html += `
-            <div class="overview-thumb${isCurrent}" onclick="selectFromOverview(${i})">
-              ${s.thumb ? `<img src="${s.thumb}" alt="${s.label}" loading="lazy">` : `<div style="width:100%;aspect-ratio:16/10;background:var(--bg);"></div>`}
-              <span class="thumb-number">${s.label}</span>
             </div>
           `;
         } else {
@@ -1922,8 +1826,6 @@
               allowfullscreen></iframe>
           </div>
         `;
-      } else if (s.type === 'link') {
-        content.innerHTML = linkSlideHTML(s);
       } else {
         content.innerHTML = `<img src="${s.src}" alt="Portfolio spread ${s.spreadNum}" draggable="false">`;
       }
