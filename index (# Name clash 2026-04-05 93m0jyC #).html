@@ -2038,6 +2038,24 @@
       updateSlide();
     }
 
+    // ── Swipe gestures for present mode ──
+    (function setupPresentSwipe() {
+      const overlay = document.getElementById('presentOverlay');
+      let startX = 0, startY = 0;
+      overlay.addEventListener('touchstart', function(e) {
+        startX = e.changedTouches[0].screenX;
+        startY = e.changedTouches[0].screenY;
+      }, { passive: true });
+      overlay.addEventListener('touchend', function(e) {
+        if (!presentMode) return;
+        const dx = e.changedTouches[0].screenX - startX;
+        const dy = e.changedTouches[0].screenY - startY;
+        const ax = Math.abs(dx), ay = Math.abs(dy);
+        if (ay > ax && dy > 80) { closePresent(); return; }
+        if (ax > 50 && ax > ay) { presentNav(dx < 0 ? 1 : -1); }
+      }, { passive: true });
+    })();
+
 
     // ══════════════════════════════════════════
     // ── Easter eggs (feature #1) ──
@@ -2436,6 +2454,9 @@
       } else {
         history.pushState(null, '', window.location.pathname);
       }
+
+      const pickerBtn = document.getElementById('chapterPickerBtn');
+      if (pickerBtn) pickerBtn.style.display = (page === 'portfolio' && isMobile()) ? 'flex' : 'none';
     }
 
 
@@ -2444,6 +2465,7 @@
     // ══════════════════════════════════════════
     function setupLazyLoad() {
       const images = document.querySelectorAll('.mobile-scroll .spread img[data-src]');
+      const margin = isMobile() ? '600px' : '400px';
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
@@ -2453,7 +2475,7 @@
             observer.unobserve(img);
           }
         });
-      }, { rootMargin: '400px' });
+      }, { rootMargin: margin });
       images.forEach(img => observer.observe(img));
     }
 
@@ -2466,6 +2488,7 @@
       // Escape closes overlays
       if (e.key === 'Escape') {
         if (presentMode) { closePresent(); return; }
+        if (document.getElementById('chapterPickerOverlay').classList.contains('open')) { closeChapterPicker(); return; }
       }
 
       // Fullscreen/presentation mode keys
@@ -2548,21 +2571,13 @@
       const overlay = document.getElementById('bootOverlay');
       if (!overlay) { initSite(); return; }
 
-      const mobile = isMobile();
-
       // Build page content immediately — tagline, tabs, terminal all visible
       window._bootActive = true;
       initSite();
 
-      // Auto-collapse terminal on mobile
-      if (mobile) {
-        document.getElementById('terminalBar').classList.add('terminal-collapsed');
-        terminalCollapsed = true;
-      }
-
       // Boot text lines animate over the page
       const lines = overlay.querySelectorAll('.boot-line');
-      const delays = mobile ? [0, 240, 720] : [0, 400, 1200];
+      const delays = [0, 400, 1200];
 
       lines.forEach((line, i) => {
         setTimeout(() => {
@@ -2577,16 +2592,16 @@
       // Fade out boot overlay
       setTimeout(() => {
         overlay.classList.add('fade-out');
-      }, mobile ? 1080 : 1800);
+      }, 1800);
 
       // After overlay gone, stagger the grid thumbnails in
       setTimeout(() => {
         overlay.remove();
         window._bootActive = false;
-        if (!mobile) document.getElementById('cmdInput').focus();
+        document.getElementById('cmdInput').focus();
         const thumbs = document.querySelectorAll('.home-thumb');
         thumbs.forEach((t, i) => setTimeout(() => t.classList.add('visible'), 15 * i));
-      }, mobile ? 1380 : 2300);
+      }, 2300);
     })();
 
     function initSite() {
