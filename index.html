@@ -162,6 +162,7 @@
     }
     .home-sub a { color: var(--accent); }
 
+    .home-tabs-toggle { display: none; }
     .home-tabs {
       display: flex;
       flex-wrap: wrap;
@@ -1159,6 +1160,17 @@
 
       .home-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
       .home-btn { min-width: 44px; min-height: 44px; top: 8px; left: 8px; }
+      .home-tagline { padding-left: 36px; }
+      .home-tabs { display: none; }
+      .home-tabs.expanded { display: flex; }
+      .home-tabs-toggle {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-family: var(--mono); font-size: 0.68rem; color: var(--accent);
+        cursor: pointer; margin-bottom: 10px; background: none; border: 1px solid var(--border);
+        border-radius: 3px; padding: 5px 10px;
+      }
+      .home-tabs-toggle .arrow { transition: transform 0.2s; }
+      .home-tabs-toggle.open .arrow { transform: rotate(90deg); }
 
       .home-thumb-num { font-size: 0.65rem; }
       .mobile-scroll .video-label { font-size: 0.75rem; }
@@ -1236,7 +1248,7 @@
   </div>
 
   <!-- Back to top -->
-  <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#8593;</button>
+  <button class="back-to-top" id="backToTop" onclick="smartScrollUp()">&#8593;</button>
 
   <!-- Chapter picker (mobile) -->
   <button class="chapter-picker-btn" id="chapterPickerBtn" onclick="openChapterPicker()" style="display:none;">&#9776;</button>
@@ -1398,6 +1410,31 @@
       }
     }
 
+    function goToPortfolioSlide(idx) {
+      if (isMobile()) {
+        runCmd('portfolio');
+        setTimeout(() => {
+          const el = document.getElementById('mobileSlide' + idx);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else {
+        runCmd('portfolio');
+        setTimeout(() => goToSlide(idx), 50);
+      }
+    }
+
+    function mobilePresent(idx) {
+      currentSlide = idx;
+      openPresent();
+    }
+
+    function toggleHomeTabs() {
+      const tabs = document.getElementById('homeTabs');
+      const btn = document.getElementById('homeTabsToggle');
+      tabs.classList.toggle('expanded');
+      btn.classList.toggle('open');
+    }
+
     function openChapterPicker() {
       const overlay = document.getElementById('chapterPickerOverlay');
       let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
@@ -1530,6 +1567,7 @@
             <a href="javascript:void(0)" onclick="runCmd('contact')">contact</a> &middot;
             <a href="javascript:void(0)" onclick="runCmd('resume')">resume</a>
           </div>
+          <button class="home-tabs-toggle" id="homeTabsToggle" onclick="toggleHomeTabs()"><span class="arrow">&#8250;</span> filter by chapter</button>
           <div class="home-tabs" id="homeTabs">${tabs}</div>
           <div class="home-grid" id="homeGrid"></div>
         </div>
@@ -1553,7 +1591,7 @@
         if (s.type === 'video') {
           const thumbUrl = `https://img.youtube.com/vi/${s.id}/maxresdefault.jpg`;
           html += `
-            <div class="home-thumb" onclick="runCmd('portfolio');setTimeout(()=>goToSlide(${i}),50)">
+            <div class="home-thumb" onclick="goToPortfolioSlide(${i})">
               <img src="${thumbUrl}" alt="${s.label}" loading="lazy">
               <div class="home-thumb-play"><svg width="10" height="10" viewBox="0 0 24 24" fill="#fff"><polygon points="6,4 20,12 6,20"/></svg></div>
               <span class="home-thumb-num">${s.label.split('—')[0].trim()}</span>
@@ -1561,14 +1599,14 @@
         } else if (s.type === 'link') {
           const linkThumb = s.thumb || '';
           html += `
-            <div class="home-thumb" onclick="runCmd('portfolio');setTimeout(()=>goToSlide(${i}),50)">
+            <div class="home-thumb" onclick="goToPortfolioSlide(${i})">
               ${linkThumb ? `<img src="${linkThumb}" alt="${s.label}" loading="lazy">` : `<div style="width:100%;aspect-ratio:16/10;background:var(--bg);"></div>`}
               <div class="home-thumb-play"><span style="font-size:7px;font-family:var(--mono);">&#8599;</span></div>
               <span class="home-thumb-num">${s.label}</span>
             </div>`;
         } else {
           html += `
-            <div class="home-thumb" onclick="runCmd('portfolio');setTimeout(()=>goToSlide(${i}),50)">
+            <div class="home-thumb" onclick="goToPortfolioSlide(${i})">
               <img src="${s.src}" alt="Spread ${s.spreadNum}" loading="lazy">
               <span class="home-thumb-num">${s.spreadNum}</span>
             </div>`;
@@ -1627,12 +1665,12 @@
           }
         }
         if (s.type === 'video') {
-          mobileScroll += videoEmbedHTML(s.id, s.label, 'embed') +
-            `<div class="video-label">${s.label}</div>`;
+          mobileScroll += `<div id="mobileSlide${i}">` + videoEmbedHTML(s.id, s.label, 'embed') +
+            `<div class="video-label">${s.label}</div></div>`;
         } else if (s.type === 'link') {
           const bgStyle = s.thumb ? `background-image:url('${s.thumb}');background-size:cover;background-position:center;` : `background:var(--bg);`;
           mobileScroll += `
-            <div class="spread">
+            <div class="spread" id="mobileSlide${i}">
               <a href="${s.url}" target="_blank" rel="noopener" style="display:block;position:relative;width:100%;aspect-ratio:16/10;border-radius:4px;overflow:hidden;text-decoration:none;${bgStyle}">
                 <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);">
                   <span style="font-family:var(--mono);font-size:0.75rem;color:#fff;border:1px solid rgba(255,255,255,0.8);padding:6px 16px;border-radius:4px;">${s.cta} &#8599;</span>
@@ -1641,7 +1679,7 @@
             </div>`;
         } else {
           mobileScroll += `
-            <div class="spread">
+            <div class="spread" id="mobileSlide${i}" onclick="mobilePresent(${i})">
               <img data-src="${s.src}" alt="Portfolio spread ${s.spreadNum}" loading="lazy">
             </div>
           `;
@@ -2521,8 +2559,30 @@
 
 
     // ══════════════════════════════════════════
-    // ── Scroll: back to top ──
+    // ── Scroll: smart back to top ──
     // ══════════════════════════════════════════
+    function smartScrollUp() {
+      if (!isMobile() || currentPage !== 'portfolio') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      // Find the chapter divider above current scroll position
+      const dividers = document.querySelectorAll('.mobile-chapter-divider');
+      let target = null;
+      for (let i = dividers.length - 1; i >= 0; i--) {
+        const rect = dividers[i].getBoundingClientRect();
+        if (rect.top < -10) { // divider is above viewport
+          target = dividers[i];
+          break;
+        }
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
     window.addEventListener('scroll', () => {
       document.getElementById('backToTop').classList.toggle('visible', window.scrollY > 600);
     });
