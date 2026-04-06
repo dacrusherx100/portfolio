@@ -1104,8 +1104,8 @@
 
     .mobile-scroll .spread img {
       width: 100%;
-      aspect-ratio: 16/10;
-      object-fit: cover;
+      height: auto;
+      min-height: 120px;
       display: block;
       opacity: 0;
       transition: opacity 0.4s ease;
@@ -1203,7 +1203,7 @@
       .hint-text { font-size: 0.75rem; }
       .present-overlay { cursor: default; }
 
-      .back-to-top { bottom: 60px; right: 12px; }
+      .back-to-top { bottom: 60px; right: 12px; width: 40px; height: 40px; }
 
       .cmd-chip .chip-desc { display: none; }
 
