@@ -173,6 +173,23 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 8px;
+      position: relative;
+      min-height: 120px;
+    }
+    .grid-spinner {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: translateX(-50%) rotate(360deg); }
     }
     .home-thumb {
       position: relative;
@@ -1146,8 +1163,6 @@
 
     @media (max-width: 768px) {
       .content-area { padding: 20px 12px 70px; }
-      .home-tagline, .home-sub, .home-tabs-toggle, .home-tabs,
-      .cmd-echo, .showreel-output, .resume-output, .about-output, .contact-output { padding-left: 36px; }
       .terminal-bar { padding: 10px 14px 14px; transition: padding 0.25s ease; }
       .terminal-bar.terminal-collapsed { padding: 0; }
 
@@ -1161,7 +1176,14 @@
       .home-output h1 { font-size: 0.95rem; }
 
       .home-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
-      .home-btn { min-width: 44px; min-height: 44px; top: 8px; left: 8px; }
+      .home-btn {
+        top: auto; left: 12px; bottom: 60px;
+        width: 40px; height: 40px;
+        background: var(--bg-surface); border: 1px solid var(--border); border-radius: 3px;
+        justify-content: center;
+        display: none;
+      }
+      .home-btn.visible { display: flex; }
       .home-tabs { display: none; }
       .home-tabs.expanded { display: flex; }
       .home-tabs-toggle {
@@ -1195,6 +1217,18 @@
         color: var(--accent); align-items: center; justify-content: center;
         font-family: var(--mono); font-size: 0.75rem; cursor: pointer; z-index: 98;
       }
+    }
+
+    /* ── Landscape lock overlay (mobile only) ── */
+    .landscape-lock {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg); z-index: 500; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px; font-family: var(--mono); color: var(--text-dim); font-size: 0.78rem;
+    }
+    .landscape-lock svg { width: 40px; height: 40px; color: var(--accent); }
+    @media (max-width: 768px) and (orientation: landscape) {
+      .landscape-lock { display: flex; }
+      body.present-active .landscape-lock { display: none; }
     }
 
     /* ── Back to top ── */
@@ -1273,6 +1307,14 @@
   <div class="present-overlay" id="presentOverlay" tabindex="0">
     <div id="presentContent"></div>
     <div class="present-exit-hint" id="presentExitHint" onclick="closePresent()">esc to exit</div>
+  </div>
+
+  <!-- Landscape lock overlay (mobile only) -->
+  <div class="landscape-lock">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="2" width="12" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/>
+    </svg>
+    <span>please rotate to portrait</span>
   </div>
 
   <!-- Terminal bar -->
@@ -1615,19 +1657,38 @@
             </div>`;
         }
       }
-      grid.innerHTML = html;
+      grid.innerHTML = '<div class="grid-spinner" id="gridSpinner"></div>' + html;
       // Fade-in (skip during boot — boot sequence handles it)
       if (!window._bootActive) {
         const thumbs = grid.querySelectorAll('.home-thumb');
-        if (isMobile()) {
-          // Mobile: all at once
+        const imgs = grid.querySelectorAll('.home-thumb img');
+        const spinner = document.getElementById('gridSpinner');
+        if (imgs.length === 0) {
+          if (spinner) spinner.remove();
           thumbs.forEach(t => t.classList.add('visible'));
         } else {
-          // Desktop: staggered
-          thumbs.forEach((thumb, i) => {
-            setTimeout(() => thumb.classList.add('visible'), 15 * i);
+          let loaded = 0;
+          const total = imgs.length;
+          const reveal = () => {
+            if (spinner) spinner.remove();
+            if (isMobile()) {
+              thumbs.forEach(t => t.classList.add('visible'));
+            } else {
+              thumbs.forEach((t, i) => setTimeout(() => t.classList.add('visible'), 15 * i));
+            }
+          };
+          const onLoad = () => { if (++loaded >= total) reveal(); };
+          imgs.forEach(img => {
+            if (img.complete) { onLoad(); }
+            else { img.addEventListener('load', onLoad); img.addEventListener('error', onLoad); }
           });
+          // Fallback: reveal after 2s even if some images haven't loaded
+          setTimeout(() => { if (loaded < total) reveal(); }, 2000);
         }
+      } else {
+        // During boot, remove spinner — boot sequence handles reveal
+        const spinner = document.getElementById('gridSpinner');
+        if (spinner) spinner.remove();
       }
     }
 
@@ -2037,6 +2098,7 @@
         navigate('portfolio', renderPortfolio);
       }
       presentMode = true;
+      document.body.classList.add('present-active');
       const overlay = document.getElementById('presentOverlay');
       overlay.classList.add('open');
       document.getElementById('terminalBar').style.display = 'none';
@@ -2052,6 +2114,7 @@
 
     function closePresent() {
       presentMode = false;
+      document.body.classList.remove('present-active');
       document.getElementById('presentOverlay').classList.remove('open');
       document.getElementById('terminalBar').style.display = '';
 
@@ -2499,6 +2562,14 @@
       } else {
         history.pushState(null, '', window.location.pathname);
       }
+
+      // Mobile floating buttons visibility
+      if (isMobile()) {
+        const homeBtn = document.querySelector('.home-btn');
+        if (homeBtn) homeBtn.classList.toggle('visible', page !== 'home');
+        const pickerBtn = document.getElementById('chapterPickerBtn');
+        if (pickerBtn) pickerBtn.style.display = page === 'portfolio' ? 'flex' : 'none';
+      }
     }
 
 
@@ -2647,6 +2718,8 @@
         overlay.remove();
         window._bootActive = false;
         if (!mobile) document.getElementById('cmdInput').focus();
+        const spinner = document.getElementById('gridSpinner');
+        if (spinner) spinner.remove();
         const thumbs = document.querySelectorAll('.home-thumb');
         if (mobile) {
           thumbs.forEach(t => t.classList.add('visible'));
