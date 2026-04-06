@@ -1145,7 +1145,9 @@
     .mobile-chapter-divider .chapter-num { color: var(--accent); margin-right: 6px; }
 
     @media (max-width: 768px) {
-      .content-area { padding: 20px 12px 70px; padding-left: 48px; }
+      .content-area { padding: 20px 12px 70px; }
+      .home-tagline, .home-sub, .home-tabs-toggle, .home-tabs,
+      .cmd-echo, .showreel-output, .resume-output, .about-output, .contact-output { padding-left: 36px; }
       .terminal-bar { padding: 10px 14px 14px; transition: padding 0.25s ease; }
       .terminal-bar.terminal-collapsed { padding: 0; }
 
@@ -1270,7 +1272,7 @@
   <!-- Presentation mode overlay -->
   <div class="present-overlay" id="presentOverlay" tabindex="0">
     <div id="presentContent"></div>
-    <div class="present-exit-hint" onclick="closePresent()">esc to exit</div>
+    <div class="present-exit-hint" id="presentExitHint" onclick="closePresent()">esc to exit</div>
   </div>
 
   <!-- Terminal bar -->
@@ -1452,9 +1454,11 @@
     }
 
     function scrollToMobileChapter(idx) {
-      const el = document.getElementById('mobileChapter' + idx);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       closeChapterPicker();
+      setTimeout(() => {
+        const el = document.getElementById('mobileChapter' + idx);
+        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }, 50);
     }
 
     // Guestbook entries (persisted in localStorage)
@@ -1612,12 +1616,18 @@
         }
       }
       grid.innerHTML = html;
-      // Stagger fade-in (skip during boot — boot sequence handles it)
+      // Fade-in (skip during boot — boot sequence handles it)
       if (!window._bootActive) {
         const thumbs = grid.querySelectorAll('.home-thumb');
-        thumbs.forEach((thumb, i) => {
-          setTimeout(() => thumb.classList.add('visible'), 15 * i);
-        });
+        if (isMobile()) {
+          // Mobile: all at once
+          thumbs.forEach(t => t.classList.add('visible'));
+        } else {
+          // Desktop: staggered
+          thumbs.forEach((thumb, i) => {
+            setTimeout(() => thumb.classList.add('visible'), 15 * i);
+          });
+        }
       }
     }
 
@@ -2030,6 +2040,7 @@
       const overlay = document.getElementById('presentOverlay');
       overlay.classList.add('open');
       document.getElementById('terminalBar').style.display = 'none';
+      document.getElementById('presentExitHint').textContent = isMobile() ? 'tap to exit \u2022 swipe to navigate' : 'esc to exit';
       updatePresent();
       overlay.focus();
 
@@ -2074,6 +2085,21 @@
       updatePresent();
       updateSlide();
     }
+
+    // Swipe gestures for present mode
+    var _swipeStartX = 0, _swipeStartY = 0;
+    document.getElementById('presentOverlay').addEventListener('touchstart', function(e) {
+      _swipeStartX = e.changedTouches[0].screenX;
+      _swipeStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+    document.getElementById('presentOverlay').addEventListener('touchend', function(e) {
+      if (!presentMode) return;
+      var dx = e.changedTouches[0].screenX - _swipeStartX;
+      var dy = e.changedTouches[0].screenY - _swipeStartY;
+      var ax = Math.abs(dx), ay = Math.abs(dy);
+      if (ay > ax && dy > 80) { closePresent(); return; }
+      if (ax > 50 && ax > ay) { presentNav(dx < 0 ? 1 : -1); }
+    }, { passive: true });
 
 
     // ══════════════════════════════════════════
@@ -2622,7 +2648,11 @@
         window._bootActive = false;
         if (!mobile) document.getElementById('cmdInput').focus();
         const thumbs = document.querySelectorAll('.home-thumb');
-        thumbs.forEach((t, i) => setTimeout(() => t.classList.add('visible'), 15 * i));
+        if (mobile) {
+          thumbs.forEach(t => t.classList.add('visible'));
+        } else {
+          thumbs.forEach((t, i) => setTimeout(() => t.classList.add('visible'), 15 * i));
+        }
       }, mobile ? 1380 : 2300);
     })();
 
