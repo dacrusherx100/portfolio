@@ -1104,7 +1104,8 @@
 
     .mobile-scroll .spread img {
       width: 100%;
-      height: auto;
+      aspect-ratio: 16/10;
+      object-fit: cover;
       display: block;
       opacity: 0;
       transition: opacity 0.4s ease;
@@ -1497,10 +1498,45 @@
 
     function scrollToMobileChapter(idx) {
       closeChapterPicker();
+      // Eagerly load all images around the target chapter so layout is stable
+      const targetEl = document.getElementById('mobileChapter' + idx);
+      if (!targetEl) return;
+
+      // Find the chapter's slide range
+      const startSlide = chapterMap[idx].slideIndex;
+      const endSlide = (idx + 1 < chapterMap.length) ? chapterMap[idx + 1].slideIndex : slides.length;
+
+      // Load images in the target chapter range (and a buffer before)
+      const bufferStart = Math.max(0, startSlide - 10);
+      for (let i = bufferStart; i < Math.min(endSlide + 10, slides.length); i++) {
+        const img = document.querySelector('#mobileSlide' + i + ' img[data-src]');
+        if (img && !img.src) {
+          img.src = img.dataset.src;
+          img.onload = () => img.classList.add('loaded');
+        }
+      }
+
+      // Show a spinner at the target location, then scroll once images settle
+      const spinner = document.createElement('div');
+      spinner.className = 'grid-spinner';
+      spinner.style.position = 'relative';
+      spinner.style.top = '0';
+      spinner.style.left = '50%';
+      spinner.style.margin = '30px auto';
+      targetEl.after(spinner);
+
+      // Hide slides in the target chapter, then reveal with fade
+      const chapterSlides = [];
+      for (let i = startSlide; i < endSlide; i++) {
+        const el = document.getElementById('mobileSlide' + i);
+        if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.35s ease'; chapterSlides.push(el); }
+      }
+
       setTimeout(() => {
-        const el = document.getElementById('mobileChapter' + idx);
-        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
-      }, 50);
+        targetEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+        spinner.remove();
+        chapterSlides.forEach(el => { el.style.opacity = '1'; });
+      }, 350);
     }
 
     // Guestbook entries (persisted in localStorage)
